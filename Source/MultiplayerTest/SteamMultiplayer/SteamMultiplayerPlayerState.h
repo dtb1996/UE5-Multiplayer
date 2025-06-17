@@ -30,6 +30,13 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(Replicated)
+	bool bIsReady = false;
+
+	void SetIsReady(bool bReady);
+
+	bool GetIsReady() const { return bIsReady; };
+
+	UPROPERTY(Replicated)
 	EPlayerStates CurrentState = EPlayerStates::E_None;
 
 	void SwitchState(const EPlayerStates NewState = EPlayerStates::E_None);

@@ -33,6 +33,10 @@ public:
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
+	void NotifyPlayerReady();
+	
+	void CheckAllPlayersReady();
+
 	void HandlePlayerTurnFinished(APlayerController* PC, const bool bSuccess, const bool bWantsRetry);
 
 protected:
@@ -40,7 +44,7 @@ protected:
 	void StartNextStage();
 
 private:
-	void StartTurns();
+	void StartFirstTurn();
 
 	void BeginPlayerTurn(int32 PlayerIndex);
 
@@ -54,9 +58,13 @@ private:
 
 	void DisablePlayer(AController* PC);
 
+	void SetAllViewsToActivePlayer(APlayerController* ActivePlayer);
+
 	int32 ExpectedPlayerCount = 1;
 
-	bool bPlayersReady = false;
+	int32 NumPlayersNotifiedReady = 0;
+
+	bool bPlayersLoggedIn = false;
 
 	TArray<FPlayerTurn> TurnOrder;
 

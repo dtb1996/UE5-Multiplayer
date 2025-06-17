@@ -1,6 +1,12 @@
 // Copyright 2025, Bit Gaming Studio. All Rights Reserved
 
 #include "SteamMultiplayerGameState.h"
+#include "Net/UnrealNetwork.h"
+
+ASteamMultiplayerGameState::ASteamMultiplayerGameState()
+{
+	bReplicates = true;
+}
 
 void ASteamMultiplayerGameState::BeginPlay()
 {
@@ -13,5 +19,5 @@ void ASteamMultiplayerGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-
+	DOREPLIFETIME(ASteamMultiplayerGameState, ActiveViewTarget);
 }

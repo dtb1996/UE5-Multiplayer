@@ -4,6 +4,7 @@
 #include "SteamMultiplayerGameInstance.h"
 #include "SteamMultiplayerGameState.h"
 #include "SteamMultiplayerPlayerController.h"
+#include "SteamMultiplayerPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 
@@ -34,12 +35,61 @@ void ASteamMultiplayerGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 
 	// Track logins
-	if (GameState->PlayerArray.Num() == ExpectedPlayerCount)
+	if (GameState->PlayerArray.Num() == GameInstance->GetExpectedPlayerCount())
 	{
-		bPlayersReady = true;
+		bPlayersLoggedIn = true;
 
-		StartTurns();
+		//StartFirstTurn();
+
+		//CheckAllPlayersReady();
+		return;
 	}
+}
+
+void ASteamMultiplayerGameMode::NotifyPlayerReady()
+{
+	NumPlayersNotifiedReady++;
+
+	CheckAllPlayersReady();
+}
+
+void ASteamMultiplayerGameMode::CheckAllPlayersReady()
+{
+	USteamMultiplayerGameInstance* GameInstance = GetGameInstance<USteamMultiplayerGameInstance>();
+	if (!GameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameInstance is not valid!"));
+		return;
+	}
+
+	if (NumPlayersNotifiedReady < GameInstance->GetExpectedPlayerCount())
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Waiting on player(s) to join, expecting %d, currently %d"), GameInstance->GetExpectedPlayerCount(), GameState->PlayerArray.Num()));
+			return;
+		}
+	}
+
+	for (APlayerState* PS : GameState->PlayerArray)
+	{
+		ASteamMultiplayerPlayerState* MyPS = Cast<ASteamMultiplayerPlayerState>(PS);
+		if (!MyPS || !MyPS->bIsReady)
+		{
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Someone is not ready yet"));
+			}
+			return;
+		}
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("All players are ready, start the first turn"));
+	}
+
+	StartFirstTurn();
 }
 
 void ASteamMultiplayerGameMode::HandlePlayerTurnFinished(APlayerController* PC, const bool bSuccess, const bool bWantsRetry)
@@ -71,7 +121,7 @@ void ASteamMultiplayerGameMode::StartNextStage_Implementation()
 
 }
 
-void ASteamMultiplayerGameMode::StartTurns()
+void ASteamMultiplayerGameMode::StartFirstTurn()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Starting hole with %d players in PlayerArray"), GameState->PlayerArray.Num());
 
@@ -226,5 +276,37 @@ void ASteamMultiplayerGameMode::DisablePlayer(AController* PC)
 	if (GPC)
 	{
 		GPC->ClientEndTurn();
+	}
+}
+
+void ASteamMultiplayerGameMode::SetAllViewsToActivePlayer(APlayerController* ActivePlayer)
+{
+	if (!ActivePlayer)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SetAllViewsToActivePlayer(): ActivePlayer is invalid"));
+		return;
+	}
+
+	APawn* ActivePawn = ActivePlayer->GetPawn();
+	if (!ActivePawn)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SetAllViewsToActivePlayer(): ActivePawn is invalid"));
+		return;
+	}
+
+	ASteamMultiplayerGameState* GS = GetGameState<ASteamMultiplayerGameState>();
+	if (GS)
+	{
+		GS->ActiveViewTarget = ActivePawn;
+	}
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		ASteamMultiplayerPlayerController* PC = Cast<ASteamMultiplayerPlayerController>(It->Get());
+
+		if (PC && PC != ActivePlayer)
+		{
+			PC->ClientSetViewTargetWithBlend(ActivePawn);
+		}
 	}
 }

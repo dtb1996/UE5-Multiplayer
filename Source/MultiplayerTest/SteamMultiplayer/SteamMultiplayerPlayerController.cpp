@@ -5,6 +5,7 @@
 #include "SteamMultiplayerGameState.h"
 #include "SteamMultiplayerPlayerState.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
 
 ASteamMultiplayerPlayerController::ASteamMultiplayerPlayerController()
 {
@@ -16,14 +17,27 @@ void ASteamMultiplayerPlayerController::BeginPlay()
 {
     Super::BeginPlay();
 
-    SetIgnoreMoveInput(true);
-    SetIgnoreLookInput(true);
+    //SetIgnoreMoveInput(true);
+    //SetIgnoreLookInput(true);
 
     //AGolfGameState* GS = GetWorld()->GetGameState<AGolfGameState>();
     //if (GS && GS->ActiveViewTarget)
     //{
     //    SetViewTargetWithBlend(GS->ActiveViewTarget, 0.5f);
     //}
+
+    // Show the waiting widget
+    //if (WaitingWidgetClass)
+    //{
+    //    WaitingWidget = CreateWidget<UUserWidget>(this, WaitingWidgetClass);
+    //    if (WaitingWidget)
+    //    {
+    //        WaitingWidget->AddToViewport();
+    //    }
+    //}
+
+    // Slight delay to ensure UI and replication are ready
+    //GetWorldTimerManager().SetTimerForNextTick(this, &ASteamMultiplayerPlayerController::Server_NotifyReady);
 }
 
 void ASteamMultiplayerPlayerController::OnRep_Pawn()
@@ -40,6 +54,35 @@ void ASteamMultiplayerPlayerController::OnRep_Pawn()
         {
             //EnableTurnInput(); // or AddMappingContext()
         }
+    }
+}
+
+void ASteamMultiplayerPlayerController::Server_NotifyReady_Implementation()
+{
+    ASteamMultiplayerPlayerState* PS = GetPlayerState<ASteamMultiplayerPlayerState>();
+    if (PS)
+    {
+        if (PS->GetIsReady())
+        {
+            UE_LOG(LogTemp, Log, TEXT("Already notified that this player is ready"));
+            return;
+        }
+        
+        PS->SetIsReady(true);
+
+        ASteamMultiplayerGameMode* GM = GetWorld()->GetAuthGameMode<ASteamMultiplayerGameMode>();
+        if (GM)
+        {
+            GM->NotifyPlayerReady();
+        }
+    }
+}
+
+void ASteamMultiplayerPlayerController::ClientRemoveWaitingWidget_Implementation()
+{
+    if (WaitingWidget)
+    {
+        WaitingWidget->RemoveFromParent();
     }
 }
 
@@ -84,4 +127,9 @@ void ASteamMultiplayerPlayerController::SetTurnInputEnabled_Implementation(const
 
     SetIgnoreMoveInput(!bNewIsEnabled);
     SetIgnoreLookInput(!bNewIsEnabled);
+}
+
+void ASteamMultiplayerPlayerController::ClientSetViewTargetWithBlend_Implementation(APawn* ActivePawn)
+{
+    SetViewTargetWithBlend(ActivePawn, 0.5);
 }

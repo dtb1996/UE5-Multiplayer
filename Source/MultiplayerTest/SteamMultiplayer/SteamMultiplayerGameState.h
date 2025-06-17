@@ -4,10 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
-//#include "GameStates.h"
-//#include "TurnState.h"
-//#include "PlayerCourseStats.h"
-//#include "GolfPlayerState.h"
 #include "SteamMultiplayerGameState.generated.h"
 
 UENUM(BlueprintType)
@@ -28,7 +24,12 @@ class MULTIPLAYERTEST_API ASteamMultiplayerGameState : public AGameStateBase
 	GENERATED_BODY()
 
 public:
+	ASteamMultiplayerGameState();
+
 	virtual void BeginPlay() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(Replicated)
+	AActor* ActiveViewTarget;
 };

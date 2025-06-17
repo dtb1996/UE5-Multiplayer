@@ -19,6 +19,17 @@ public:
 
 	virtual void OnRep_Pawn() override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UUserWidget> WaitingWidgetClass;
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void Server_NotifyReady();
+	void Server_NotifyReady_Implementation();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRemoveWaitingWidget();
+	void ClientRemoveWaitingWidget_Implementation();
+
 	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void Server_NotifyFinishedTurn(bool bSuccess, bool bWantsRetry);
 	void Server_NotifyFinishedTurn_Implementation(bool bSuccess, bool bWantsRetry);
@@ -31,4 +42,10 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	void SetTurnInputEnabled(const bool bNewIsEnabled);
+
+	UFUNCTION(Client, Reliable)
+	void ClientSetViewTargetWithBlend(APawn* ActivePawn);
+
+private:
+	UUserWidget* WaitingWidget;
 };

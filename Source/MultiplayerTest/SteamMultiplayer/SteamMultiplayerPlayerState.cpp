@@ -21,6 +21,13 @@ void ASteamMultiplayerPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePr
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ASteamMultiplayerPlayerState, CurrentState);
+	DOREPLIFETIME(ASteamMultiplayerPlayerState, bIsReady);
+}
+
+void ASteamMultiplayerPlayerState::SetIsReady(bool bReady)
+{
+	bIsReady = bReady;
+	//OnRep_bIsReady();
 }
 
 void ASteamMultiplayerPlayerState::SwitchState(const EPlayerStates NewState)

@@ -29,8 +29,6 @@ class MULTIPLAYERTEST_API ASteamMultiplayerGameMode : public AGameModeBase
 public:
 	ASteamMultiplayerGameMode();
 
-	virtual void StartPlay() override;
-
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 	void NotifyPlayerReady();

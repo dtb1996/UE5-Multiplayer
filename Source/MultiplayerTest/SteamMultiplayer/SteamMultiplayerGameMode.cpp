@@ -13,17 +13,6 @@ ASteamMultiplayerGameMode::ASteamMultiplayerGameMode()
 	bStartPlayersAsSpectators = true;
 }
 
-void ASteamMultiplayerGameMode::StartPlay()
-{
-	Super::StartPlay();
-
-	USteamMultiplayerGameInstance* GameInstance = GetGameInstance<USteamMultiplayerGameInstance>();
-	if (GameInstance)
-	{
-		ExpectedPlayerCount = GameInstance->GetExpectedPlayerCount();
-	}
-}
-
 void ASteamMultiplayerGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
@@ -74,7 +63,7 @@ void ASteamMultiplayerGameMode::CheckAllPlayersReady()
 	for (APlayerState* PS : GameState->PlayerArray)
 	{
 		ASteamMultiplayerPlayerState* MyPS = Cast<ASteamMultiplayerPlayerState>(PS);
-		if (!MyPS || !MyPS->bIsReady)
+		if (!MyPS || !MyPS->GetIsReady())
 		{
 			if (GEngine)
 			{

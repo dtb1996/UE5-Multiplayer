@@ -13,42 +13,67 @@ ASteamMultiplayerGameMode::ASteamMultiplayerGameMode()
 	bStartPlayersAsSpectators = true;
 }
 
-void ASteamMultiplayerGameMode::PostLogin(APlayerController* NewPlayer)
+void ASteamMultiplayerGameMode::BeginPlay()
 {
-	Super::PostLogin(NewPlayer);
+	Super::BeginPlay();
 
-	USteamMultiplayerGameInstance* GameInstance = GetGameInstance<USteamMultiplayerGameInstance>();
-	if (!GameInstance)
-	{
-		return;
-	}
-
-	// Track logins
-	if (GameState->PlayerArray.Num() == GameInstance->GetExpectedPlayerCount())
-	{
-		bPlayersLoggedIn = true;
-
-		//StartFirstTurn();
-
-		//CheckAllPlayersReady();
-		return;
-	}
+	//for (TActorIterator<AStageManager> It(GetWorld()); It; ++It)
+	//{
+	//	StageManager = *It;
+	//	break;
+	//}
 }
 
 void ASteamMultiplayerGameMode::NotifyPlayerReady()
 {
 	NumPlayersNotifiedReady++;
 
-	CheckAllPlayersReady();
+	bArePlayersReady = CheckAllPlayersReady();
+
+	if (!bArePlayersReady)
+	{
+		return;
+	}
+
+	TurnOrder.Empty();
+
+	for (APlayerState* PS : GameState->PlayerArray)
+	{
+		UE_LOG(LogTemp, Log, TEXT(" - Player: %s"), *PS->GetPlayerName());
+		TurnOrder.Add({ PS, false, false });
+	}
+
+	TryStartFirstTurn();
 }
 
-void ASteamMultiplayerGameMode::CheckAllPlayersReady()
+void ASteamMultiplayerGameMode::HandleStageReady()
+{
+	bIsHoleReady = true;
+
+	if (bIsRetryingCurrentPlayer)
+	{
+		bIsRetryingCurrentPlayer = false;
+		BeginPlayerTurn(CurrentPlayerIndex);
+		return;
+	}
+
+	if (bIsAdvancingTurn)
+	{
+		bIsAdvancingTurn = false;
+		BeginPlayerTurn(CurrentPlayerIndex);
+		return;
+	}
+
+	TryStartFirstTurn();
+}
+
+bool ASteamMultiplayerGameMode::CheckAllPlayersReady()
 {
 	USteamMultiplayerGameInstance* GameInstance = GetGameInstance<USteamMultiplayerGameInstance>();
 	if (!GameInstance)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GameInstance is not valid!"));
-		return;
+		return false;
 	}
 
 	if (NumPlayersNotifiedReady < GameInstance->GetExpectedPlayerCount())
@@ -56,8 +81,8 @@ void ASteamMultiplayerGameMode::CheckAllPlayersReady()
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Waiting on player(s) to join, expecting %d, currently %d"), GameInstance->GetExpectedPlayerCount(), GameState->PlayerArray.Num()));
-			return;
 		}
+		return false;
 	}
 
 	for (APlayerState* PS : GameState->PlayerArray)
@@ -69,16 +94,29 @@ void ASteamMultiplayerGameMode::CheckAllPlayersReady()
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Someone is not ready yet"));
 			}
-			return;
+			return false;
 		}
 	}
 
-	if (GEngine)
+	UE_LOG(LogTemp, Warning, TEXT("CheckAllPlayersReady: All players are ready"));
+
+	return true;
+}
+
+void ASteamMultiplayerGameMode::TryStartFirstTurn()
+{
+	UE_LOG(LogTemp, Warning, TEXT("TryStartFirstTurn World: %s"), *GetWorld()->GetName());
+
+	if (!bArePlayersReady || !bIsHoleReady || bHasStartedFirstTurn)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("All players are ready, start the first turn"));
+		UE_LOG(LogTemp, Warning, TEXT("TryStartFirstTurn failed: bArePlayersReady - %s | bIsHoleReady - %s | bHasStartedFirstTurn - %s"), (bArePlayersReady ? TEXT("true") : TEXT("false")), (bIsHoleReady ? TEXT("true") : TEXT("false")), (bHasStartedFirstTurn) ? TEXT("true") : TEXT("false"));
+		return;
 	}
 
-	StartFirstTurn();
+	bHasStartedFirstTurn = true;
+
+	CurrentPlayerIndex = 0;
+	BeginPlayerTurn(CurrentPlayerIndex);
 }
 
 void ASteamMultiplayerGameMode::HandlePlayerTurnFinished(APlayerController* PC, const bool bSuccess, const bool bWantsRetry)

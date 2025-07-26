@@ -11,13 +11,13 @@ struct FPlayerTurn
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 	APlayerState* Player = nullptr;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 	bool bCompleted = false;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 	bool bWantsRetry = false;
 };
 
@@ -29,19 +29,25 @@ class MULTIPLAYERTEST_API ASteamMultiplayerGameMode : public AGameModeBase
 public:
 	ASteamMultiplayerGameMode();
 
-	virtual void PostLogin(APlayerController* NewPlayer) override;
-
+	UFUNCTION(BlueprintCallable)
 	void NotifyPlayerReady();
-	
-	void CheckAllPlayersReady();
+
+	UFUNCTION(BlueprintCallable)
+	void HandleStageReady();
 
 	void HandlePlayerTurnFinished(APlayerController* PC, const bool bSuccess, const bool bWantsRetry);
 
 protected:
+	virtual void BeginPlay() override;
+
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void StartNextStage();
 
 private:
+	bool CheckAllPlayersReady();
+
+	void TryStartFirstTurn();
+
 	void StartFirstTurn();
 
 	void BeginPlayerTurn(int32 PlayerIndex);
@@ -58,13 +64,19 @@ private:
 
 	void SetAllViewsToActivePlayer(APlayerController* ActivePlayer);
 
-	int32 ExpectedPlayerCount = 1;
-
 	int32 NumPlayersNotifiedReady = 0;
-
-	bool bPlayersLoggedIn = false;
 
 	TArray<FPlayerTurn> TurnOrder;
 
 	int32 CurrentPlayerIndex = 0;
+
+	bool bArePlayersReady = false;
+
+	bool bIsHoleReady = false;
+
+	bool bHasStartedFirstTurn = false;
+
+	bool bIsAdvancingTurn = false;
+
+	bool bIsRetryingCurrentPlayer = false;
 };

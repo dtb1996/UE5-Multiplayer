@@ -18,6 +18,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game Info")
 	int GetExpectedPlayerCount() const { return ExpectedPlayerCount; };
 
-private:
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int ExpectedPlayerCount = 1;
 };
